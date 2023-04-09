@@ -1,6 +1,10 @@
-from django.urls import path
+from django.urls import path, include
 from .views import *
+from rest_framework.routers import DefaultRouter
 
+router = DefaultRouter()
+router.register('viewset', ActicleViewSet, basename='acticle')
+router.register('genericview', GenericViewActicle, basename='acticles')
 
 urlpatterns = [
     # use Django's HTTP request
@@ -11,5 +15,7 @@ urlpatterns = [
     path('acticleApi/<int:id>/', acticleDetails.as_view()),
     # use Generic view API
     path('acticleGeneric/', GenericApiView.as_view()),
-    path('acticleGeneric/<int:id>/', GenericApiView.as_view())
+    path('acticleGeneric/<int:id>/', GenericApiView.as_view()),
+    # Use View Set
+    path('acticles/', include(router.urls)),
 ]

@@ -1,12 +1,60 @@
 from django.db.migrations import serializer
-from django.shortcuts import render
+from django.shortcuts import render, get_object_or_404
 from django.http import HttpResponse
 from .models import Acticle
 from .serializers import ActicleSerial
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
-from rest_framework import status, generics, mixins
+from rest_framework import status, generics, mixins, viewsets
 from rest_framework.views import APIView
+from rest_framework.authentication import SessionAuthentication, BasicAuthentication, TokenAuthentication
+from rest_framework.permissions import IsAuthenticated
+# from django.contrib.auth.middleware import AuthenticationMiddleware
+
+
+# Generic View Set API
+class GenericViewActicle(viewsets.GenericViewSet, mixins.ListModelMixin, mixins.CreateModelMixin,
+                         mixins.RetrieveModelMixin, mixins.UpdateModelMixin, mixins.DestroyModelMixin):
+
+    queryset = Acticle.objects.all()
+    serializer_class = ActicleSerial
+    authentication_classes = [SessionAuthentication, BasicAuthentication, TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+
+
+# Using view set too building create and retrieve data
+class ActicleViewSet(viewsets.ViewSet):
+    def list(self, request):
+        acticle_list = Acticle.objects.all()
+        serializer = ActicleSerial(acticle_list, many=True)
+        return Response(serializer.data)
+
+    def create(self, request):
+        serializer = ActicleSerial(data=request.data)
+
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def retrieve(self, request, pk=None):
+        acticle_set = Acticle.objects.all()
+        acticle = get_object_or_404(acticle_set, pk=pk)
+        serializer = ActicleSerial(acticle)
+        return Response(serializer.data)
+
+    def update(self, request, pk=None):
+        acticle = Acticle.objects.get(pk=pk)
+        serializer = ActicleSerial(acticle, data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def destroy(self, request, pk=None):
+        acticle = Acticle.objects.get(pk=pk)
+        acticle.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 # generic api views
@@ -16,6 +64,12 @@ class GenericApiView(generics.GenericAPIView, mixins.ListModelMixin, mixins.Crea
     queryset = Acticle.objects.all()
 
     lookup_field = 'id'
+
+    # Authentication API
+    # authentication_classes = [SessionAuthentication, BasicAuthentication]
+    # Authentication by Token
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
 
     def get(self, request, id=None):
         if id:
